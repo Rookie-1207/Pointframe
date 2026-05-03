@@ -12,6 +12,7 @@ public partial class AnnotationViewModel : ObservableObject
 {
     private readonly IEventAggregator _eventAggregator;
     private readonly IAnnotationGeometryService _geometry;
+    private readonly IUserSettingsService _settingsService;
     protected readonly ILogger _logger;
 
     public AnnotationViewModel(
@@ -23,6 +24,7 @@ public partial class AnnotationViewModel : ObservableObject
         _eventAggregator = eventAggregator;
         _geometry = geometry;
         _logger = logger;
+        _settingsService = settings;
 
         try
         {
@@ -36,7 +38,16 @@ public partial class AnnotationViewModel : ObservableObject
         }
 
         _strokeThickness = settings.Current.DefaultStrokeThickness;
+
+        StylePresets = settings.Current.StylePresets
+            .Select((p, i) => new AnnotationPresetItemViewModel(i, p.Name, p.Color, p.StrokeThickness, new SolidColorBrush(ParsePresetColor(p.Color)), this))
+            .ToList()
+            .AsReadOnly();
     }
+
+    public IReadOnlyList<AnnotationPresetItemViewModel> StylePresets { get; }
+
+    public bool HasStylePresets => StylePresets.Count > 0;
 
     [ObservableProperty]
     private AnnotationTool _selectedTool = AnnotationTool.Rectangle;
@@ -46,6 +57,15 @@ public partial class AnnotationViewModel : ObservableObject
 
     [ObservableProperty]
     private double _strokeThickness;
+
+    [ObservableProperty]
+    private int? _activePresetIndex;
+
+    [ObservableProperty]
+    private bool _isColorMenuOpen;
+
+    [RelayCommand]
+    private void ToggleColorMenu() => IsColorMenuOpen = !IsColorMenuOpen;
 
     public double DpiX { get; set; } = 1.0;
     public double DpiY { get; set; } = 1.0;
@@ -128,6 +148,7 @@ public partial class AnnotationViewModel : ObservableObject
             "Pink" => Colors.HotPink,
             _ => Colors.Red
         };
+        ActivePresetIndex = null;
     }
 
     public void SetStrokeThicknessFromText(string? text)
@@ -135,6 +156,44 @@ public partial class AnnotationViewModel : ObservableObject
         if (double.TryParse(text, out var t))
         {
             StrokeThickness = t;
+            ActivePresetIndex = null;
+        }
+    }
+
+    [RelayCommand]
+    private void ApplyPreset(AnnotationPresetItemViewModel presetItem)
+    {
+        try
+        {
+            ActiveColor = (Color)System.Windows.Media.ColorConverter.ConvertFromString(presetItem.Color);
+        }
+        catch
+        {
+            // keep existing color
+        }
+
+        StrokeThickness = presetItem.StrokeThickness;
+        ActivePresetIndex = presetItem.Index;
+        IsColorMenuOpen = false;
+
+        _settingsService.Update(s =>
+        {
+            s.DefaultAnnotationColor = presetItem.Color;
+            s.DefaultStrokeThickness = presetItem.StrokeThickness;
+        });
+
+        _logger.LogDebug("Style preset applied: {Name} ({Color}, {Thickness}px)", presetItem.Name, presetItem.Color, presetItem.StrokeThickness);
+    }
+
+    private static Color ParsePresetColor(string hex)
+    {
+        try
+        {
+            return (Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+        }
+        catch
+        {
+            return Colors.Red;
         }
     }
 
