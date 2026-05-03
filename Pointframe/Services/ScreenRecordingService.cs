@@ -129,9 +129,12 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         IsMicrophoneMuted = initialMicrophoneMutedState ?? false;
 
         // Bounded channel: if the encode loop falls behind, CaptureFrameToChannel will
-        // skip frames (TryWrite returns false) rather than stalling the capture thread.
-        _encodeChannel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
+        // skip the newest frame (TryWrite returns false) rather than stalling the capture thread.
+        // DropWrite is used so TryWrite still returns false on a full channel, keeping the
+        // buffer-pool return and dropped-frame counter working correctly.
+        _encodeChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(PoolSize)
         {
+            FullMode = BoundedChannelFullMode.DropWrite,
             SingleReader = true,
             SingleWriter = true,
             AllowSynchronousContinuations = false,
@@ -165,7 +168,10 @@ public sealed class ScreenRecordingService : IScreenRecordingService
 
         try
         {
-            _captureLoop?.Wait(TimeSpan.FromSeconds(3));
+            if (_captureLoop?.Wait(TimeSpan.FromSeconds(3)) == false)
+            {
+                _logger.LogWarning("Capture loop did not stop within 3 s");
+            }
         }
         catch (AggregateException ae) when (ae.InnerExceptions.All(ex => ex is OperationCanceledException))
         {
@@ -176,7 +182,10 @@ public sealed class ScreenRecordingService : IScreenRecordingService
 
         try
         {
-            _encodeLoop?.Wait(TimeSpan.FromSeconds(10));
+            if (_encodeLoop?.Wait(TimeSpan.FromSeconds(10)) == false)
+            {
+                _logger.LogWarning("Encode loop did not stop within 10 s");
+            }
         }
         catch (AggregateException ae) when (ae.InnerExceptions.All(ex => ex is OperationCanceledException))
         {
@@ -331,7 +340,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
                 _bufferPool.Enqueue(buffer);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Encode loop failed");
         }

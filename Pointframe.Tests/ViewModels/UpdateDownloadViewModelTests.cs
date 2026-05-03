@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -25,7 +26,9 @@ public sealed class UpdateDownloadViewModelTests : IDisposable
     {
         var handler = new FakeHttpMessageHandler(responseBody, statusCode, contentLength);
         var http = new HttpClient(handler);
-        return new UpdateDownloadViewModel(http, new Mock<IProcessService>().Object);
+        var vm = new UpdateDownloadViewModel(http, new Mock<IProcessService>().Object);
+        vm.InstallerSignatureVerifier = _ => true;
+        return vm;
     }
 
     [Fact]
@@ -213,6 +216,41 @@ public sealed class UpdateDownloadViewModelTests : IDisposable
         Assert.True(vm.IsDownloading);
         Assert.False(vm.IsFailed);
         Assert.Equal(0, vm.ProgressPercent);
+    }
+
+    [Fact]
+    public async Task Download_SignatureVerificationFailure_SetsFailed()
+    {
+        var vm = CreateVm("data");
+        vm.InstallerSignatureVerifier = _ => false;
+
+        await vm.DownloadAndInstallAsync("https://github.com/fake/asset.exe", _destPath);
+
+        Assert.True(vm.IsFailed);
+    }
+
+    [Fact]
+    public async Task Download_SignatureVerificationFailure_DoesNotLaunchInstaller()
+    {
+        var processMock = new Mock<IProcessService>();
+        var handler = new FakeHttpMessageHandler("data", HttpStatusCode.OK, null);
+        var vm = new UpdateDownloadViewModel(new HttpClient(handler), processMock.Object);
+        vm.InstallerSignatureVerifier = _ => false;
+
+        await vm.DownloadAndInstallAsync("https://github.com/fake/asset.exe", _destPath);
+
+        processMock.Verify(p => p.Start(It.IsAny<ProcessStartInfo>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Download_SignatureVerificationFailure_DeletesTempFile()
+    {
+        var vm = CreateVm("data");
+        vm.InstallerSignatureVerifier = _ => false;
+
+        await vm.DownloadAndInstallAsync("https://github.com/fake/asset.exe", _destPath);
+
+        Assert.False(File.Exists(_destPath));
     }
 
     private sealed class FakeHttpMessageHandler(string body, HttpStatusCode statusCode, long? contentLength) : HttpMessageHandler
