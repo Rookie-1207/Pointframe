@@ -45,10 +45,24 @@ public partial class AnnotationViewModel : ObservableObject
     [ObservableProperty]
     private double _strokeThickness;
 
+    public double DpiX { get; set; } = 1.0;
+    public double DpiY { get; set; } = 1.0;
+
+    private AnnotationTool _previousTool = AnnotationTool.Rectangle;
+
     public SolidColorBrush ActiveBrush => new(ActiveColor);
 
-    partial void OnSelectedToolChanged(AnnotationTool value) =>
+    partial void OnSelectedToolChanged(AnnotationTool value)
+    {
+        if (value != AnnotationTool.ColorPicker)
+        {
+            _previousTool = value;
+        }
+
         _logger.LogDebug("Tool selected: {Tool}", value);
+    }
+
+    public void RevertToPreviousTool() => SelectedTool = _previousTool;
 
     partial void OnActiveColorChanged(Color value)
     {
@@ -124,7 +138,7 @@ public partial class AnnotationViewModel : ObservableObject
 
     public ShapeParameters? TryGetShapeParameters()
     {
-        if (!_geometry.IsValidShapeSize(DragStart, DragCurrent))
+        if (SelectedTool != AnnotationTool.PixelRuler && !_geometry.IsValidShapeSize(DragStart, DragCurrent))
         {
             return null;
         }
@@ -161,6 +175,14 @@ public partial class AnnotationViewModel : ObservableObject
             AnnotationTool.Blur => BuildBlurParams(DragStart, DragCurrent),
 
             AnnotationTool.Callout => BuildCalloutParams(DragStart, DragCurrent, color, thick),
+
+            AnnotationTool.PixelRuler => new PixelRulerShapeParameters(
+                P1: DragStart,
+                P2: DragCurrent,
+                Color: color,
+                Thickness: thick,
+                DpiX: DpiX,
+                DpiY: DpiY),
 
             _ => null
         };
