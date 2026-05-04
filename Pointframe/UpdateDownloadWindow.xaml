@@ -8,23 +8,12 @@
         WindowStyle="ToolWindow"
         Background="{DynamicResource WindowBackground}">
 
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
-    </Window.Resources>
-
     <StackPanel Margin="24">
 
         <TextBlock Text="{Binding StatusText}"
                    FontSize="14"
                    TextWrapping="Wrap"
                    Margin="0,0,0,16"/>
-
-        <TextBlock Visibility="{Binding ShowManualDownloadLink, Converter={StaticResource BoolToVisibility}}"
-                   FontSize="13"
-                   TextWrapping="Wrap"
-                   Margin="0,0,0,16">
-            <Hyperlink Command="{Binding OpenReleasesPageCommand}">Download latest release manually</Hyperlink>
-        </TextBlock>
 
         <ProgressBar Height="22"
                      Minimum="0" Maximum="100"
