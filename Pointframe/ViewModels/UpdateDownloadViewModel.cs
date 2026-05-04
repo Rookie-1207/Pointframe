@@ -35,6 +35,11 @@ public partial class UpdateDownloadViewModel : ObservableObject
     [ObservableProperty]
     private bool _isFailed;
 
+    [ObservableProperty]
+    private bool _showManualDownloadLink;
+
+    internal const string ReleasesPageUrl = "https://github.com/dimitar-radenkov/Pointframe/releases";
+
     public event Action? RequestClose;
 
     public UpdateDownloadViewModel(
@@ -96,8 +101,9 @@ public partial class UpdateDownloadViewModel : ObservableObject
 
             if (!InstallerSignatureVerifier(destPath))
             {
-                StatusText = "Download failed: installer signature could not be verified.";
+                StatusText = "Download failed: installer signature could not be verified. Please download manually.";
                 IsFailed = true;
+                ShowManualDownloadLink = true;
                 TryDeleteFile(destPath);
                 return;
             }
@@ -134,6 +140,10 @@ public partial class UpdateDownloadViewModel : ObservableObject
 
         RequestClose?.Invoke();
     }
+
+    [RelayCommand]
+    private void OpenReleasesPage() =>
+        _process.Start(new ProcessStartInfo(ReleasesPageUrl) { UseShellExecute = true });
 
     private bool VerifyInstallerSignature(string path)
     {

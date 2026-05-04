@@ -253,6 +253,27 @@ public sealed class UpdateDownloadViewModelTests : IDisposable
         Assert.False(File.Exists(_destPath));
     }
 
+    [Fact]
+    public async Task Download_SignatureVerificationFailure_ShowsManualDownloadLink()
+    {
+        var vm = CreateVm("data");
+        vm.InstallerSignatureVerifier = _ => false;
+
+        await vm.DownloadAndInstallAsync("https://github.com/fake/asset.exe", _destPath);
+
+        Assert.True(vm.ShowManualDownloadLink);
+    }
+
+    [Fact]
+    public async Task Download_Success_DoesNotShowManualDownloadLink()
+    {
+        var vm = CreateVm("data");
+
+        await vm.DownloadAndInstallAsync("https://github.com/fake/asset.exe", _destPath);
+
+        Assert.False(vm.ShowManualDownloadLink);
+    }
+
     private sealed class FakeHttpMessageHandler(string body, HttpStatusCode statusCode, long? contentLength) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
