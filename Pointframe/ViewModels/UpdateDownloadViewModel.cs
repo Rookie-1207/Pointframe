@@ -187,7 +187,7 @@ public partial class UpdateDownloadViewModel : ObservableObject
                     DwUnionChoice = 1,       // WTD_CHOICE_FILE
                     PFile = pFileInfo,
                     DwStateAction = 0,       // WTD_STATEACTION_IGNORE
-                    DwProvFlags = 0x1040,    // WTD_REVOCATION_CHECK_NONE | WTD_SAFER_FLAG
+                    DwProvFlags = 0x0110,    // WTD_REVOCATION_CHECK_NONE | WTD_SAFER_FLAG
                 };
 
                 var actionId = WinTrustActionGenericVerifyV2;
