@@ -73,6 +73,7 @@ internal sealed class AnnotationCanvasInteractionController
             return;
         }
 
+        point = ClampToCanvas(point);
         _viewModel.UpdateDrawing(point);
         _renderer.UpdateShape(point);
     }
@@ -84,12 +85,19 @@ internal sealed class AnnotationCanvasInteractionController
             return;
         }
 
-        _viewModel.UpdateDrawing(point);
+        point = ClampToCanvas(point);
         _canvas.ReleaseMouseCapture();
         _renderer.CommitShape(point);
         _viewModel.CommitDrawing();
         _viewModel.CommitGroup();
         _onAnnotationCommitted();
+    }
+
+    private Point ClampToCanvas(Point point)
+    {
+        var maxX = _canvas.ActualWidth > 0d ? _canvas.ActualWidth : double.PositiveInfinity;
+        var maxY = _canvas.ActualHeight > 0d ? _canvas.ActualHeight : double.PositiveInfinity;
+        return new(Math.Clamp(point.X, 0d, maxX), Math.Clamp(point.Y, 0d, maxY));
     }
 
     public void Cancel()
