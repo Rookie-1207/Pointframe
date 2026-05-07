@@ -71,18 +71,25 @@ If you find Pointframe useful, a ⭐ on GitHub helps others discover it — than
 ## Features
 
 - **Region capture** — Press the configured hotkey (default: `Print Screen`) to draw a selection on screen
+- **Whole-screen snip** — Instantly capture the entire screen from the tray icon or a dedicated hotkey
 - **Frozen screen snapshot** — The screen is captured instantly when the hotkey is pressed, freezing menus, tooltips, and popups exactly as they appear
 - **Selection magnifier** — A zoomed loupe follows your cursor while drawing the capture region for pixel-accurate selection
-- **Configurable capture hotkey** — Change the capture hotkey to any key you prefer from Settings
-- **Annotation tools** — Arrow, line, rectangle, circle, pen, highlighter, text, numbered steps, blur
+- **Configurable capture hotkeys** — Change the region-capture hotkey and the whole-screen record hotkey independently from Settings
+- **Annotation tools** — Arrow, line, rectangle, circle, pen, highlighter, text, numbered labels, blur/pixelate, callout (speech bubble), color picker, pixel ruler
+- **Style presets** — Up to 5 named color-and-thickness shortcuts shown as quick-access dots in the annotation toolbar; fully configurable in Settings
+- **Color picker tool** — Sample any pixel color from the frozen screenshot; the loupe zooms in with a hex preview and sets the active annotation color
+- **Pixel ruler tool** — Draw a ruler across the screenshot to measure distances in pixels
 - **Blur tool** — Drag over sensitive content (faces, emails, passwords) to apply a Gaussian blur before sharing
 - **OCR — Copy Text** — Draw a lasso around text in the screenshot to extract it via OCR and copy to clipboard (uses Windows.Media.Ocr, no external dependencies)
 - **Open existing image** — Load a PNG, JPG/JPEG, or BMP from the tray menu and annotate it without taking a new screenshot
 - **Pin screenshot** — Pin the captured screenshot as a floating, always-on-top, resizable window for quick reference while you work
 - **Undo / redo** — Full undo/redo stack during annotation
 - **Copy & auto-save** — Copy to clipboard; optional auto-save to a configurable folder
-- **Screen recording** — Record a selected region to MP4 (H.264 via ffmpeg), with optional microphone audio from a selected Windows input device
-- **Recording-time annotations** — Add shapes and text directly on top of a recording while it is in progress
+- **Screen recording** — Record a selected region to MP4 (H.264 via ffmpeg) or start a whole-screen recording instantly with `Ctrl+Shift+R` (default); optional microphone audio from a selected Windows input device
+- **Recording-time annotations** — Add shapes and text directly on top of a recording while it is in progress; switch between draw mode and interact mode from the floating HUD
+- **Cursor highlight** — Configurable glowing ring around the cursor during recording so viewers never lose track of your pointer
+- **Click ripple** — Visual ripple effect on mouse clicks during recording to make interactions obvious
+- **GIF export** — Export any recent recording to GIF directly from the tray's Recent recordings menu (requires ffmpeg)
 - **Capture delay** — Configurable countdown (0 / 3 / 5 / 10 s) before the selection overlay appears, useful for capturing menus and hover states
 - **Auto-updates** — A background service checks GitHub Releases on every launch and on a configurable schedule (every day / 2 days / 3 days). When a new version is found a tray balloon appears; click it to confirm, watch the progress bar, and the installer runs automatically — no browser, no manual downloads
 - **System tray** — Runs silently in the background; all actions accessible from the tray icon
@@ -95,6 +102,75 @@ If you find Pointframe useful, a ⭐ on GitHub helps others discover it — than
 - **Live workflow capture** — Record a selected region while drawing annotations on top of the recording as you work
 - **Sensitive content redaction** — Blur passwords, emails, and other private details before sharing screenshots or recordings
 - **Text extraction** — Select text in a screenshot with OCR and copy it directly to the clipboard
+
+## System tray menu
+
+Right-click the tray icon to access all actions:
+
+| Item | Description |
+|---|---|
+| New Snip | Open the region-capture overlay (same as the capture hotkey) |
+| Whole screen snip | Instantly capture the entire screen |
+| Open image… | Load a PNG / JPG / BMP file and open it in the annotation overlay |
+| Recent captures | Submenu listing the last 5 saved screenshots; each has **Open** and **Open folder** actions |
+| Recent recordings | Submenu listing the last 5 recordings; each has **Open**, **Open folder**, and **Export to GIF** actions |
+| Settings | Open the Settings window |
+| Check for Updates | Manually trigger an update check against GitHub Releases |
+| About | Show version information |
+| Exit | Quit the application |
+
+Left-clicking the tray icon triggers **New Snip** directly.
+
+## Settings
+
+Open **Settings** from the tray icon to configure:
+
+### Capture
+
+| Setting | Description |
+|---|---|
+| Screenshot save folder | Where auto-saved screenshots are written |
+| Auto-save on copy | Automatically save every screenshot when copied |
+| Capture delay | Countdown (sec) before the selection overlay opens: 0 / 3 / 5 / 10 |
+| Capture hotkey | The key that triggers the region-capture overlay (default: `Print Screen`); supports modifier keys (Ctrl, Shift, Alt) |
+
+### Recording
+
+| Setting | Description |
+|---|---|
+| Recording output folder | Where recorded MP4 files are saved |
+| Record hotkey | The key combination that starts a whole-screen recording (default: `Ctrl+Shift+R`) |
+| Cursor highlight | Show a glowing ring around the cursor during recording; configurable size |
+| Click ripple | Show a ripple effect on mouse clicks during recording |
+| Microphone *(advanced)* | Include microphone audio when recording starts |
+| Microphone device *(advanced)* | Which Windows audio input device to use |
+| GIF export FPS *(advanced)* | Frame rate for GIF exports: 5 / 8 / 10 / 15 / 20 |
+
+### Annotation
+
+| Setting | Description |
+|---|---|
+| Default annotation color | Pre-selected color when the overlay opens |
+| Stroke thickness | Default pen/shape width |
+| Style presets | Up to 5 named color-and-thickness shortcuts shown in the annotation toolbar |
+
+### App
+
+| Setting | Description |
+|---|---|
+| Theme | App appearance: Light, Dark, or System (follows Windows) |
+| Auto-update check interval | How often to check for new releases: Every day / Every 2 days / Every 3 days / Never |
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Print Screen` (default, configurable) | Open region-capture overlay |
+| `Ctrl+Shift+R` (default, configurable) | Start whole-screen recording |
+| `Ctrl+Z` | Undo last annotation |
+| `Ctrl+Y` | Redo annotation |
+| `Ctrl+C` | Copy screenshot to clipboard |
+| `Escape` | Close the overlay / cancel current action |
 
 ## Requirements
 
@@ -136,46 +212,20 @@ dotnet run   --project Pointframe/Pointframe.csproj
 dotnet test Pointframe.Tests/Pointframe.Tests.csproj
 ```
 
-## Settings
-
-Open **Settings** from the tray icon to configure:
-
-| Setting | Description |
-|---|---|
-| Screenshot save folder | Where auto-saved screenshots are written |
-| Auto-save on copy | Automatically save every screenshot when copied |
-| Capture delay | Countdown (sec) before the selection overlay opens |
-| Capture hotkey | The key that triggers the capture overlay (default: Print Screen) |
-| Recording output folder | Where recorded videos are saved |
-| Record microphone | Include audio from the selected Windows recording device when screen recording starts |
-| HUD close delay | How long the recording HUD stays visible after stopping (0 / 3 / 5 / 10 / 15 / 30 s) |
-| Default annotation colour | Pre-selected colour when the overlay opens |
-| Stroke thickness | Default pen/shape width |
-| Auto-update check interval | How often to check for new releases: Every day / Every 2 days / Every 3 days / Never |
-| Theme | App appearance: Light, Dark, or System (follows Windows) |
-
-## Keyboard shortcuts
-
-| Shortcut | Action |
-|---|---|
-| `Ctrl+Z` | Undo last annotation |
-| `Ctrl+Y` | Redo annotation |
-| `Ctrl+C` | Copy screenshot to clipboard |
-| `Escape` | Close the overlay / cancel current action |
-
 ## Project structure
 
 ```
-SnippingTool/           Main WPF application
-  App.xaml.cs           DI setup, tray icon, global hotkey
+Pointframe/             Main WPF application
+  App.xaml.cs           DI setup, tray icon, global hotkeys
   AnnotationTool.cs     Enum of all annotation tool types
   CountdownWindow       Fullscreen countdown overlay
   OverlayWindow         Region-selection and annotation UI
+  RecordingOverlayWindow  Live annotation surface during recording
   ViewModels/           MVVM view models
-  Services/             Screen capture, geometry, update check
+  Services/             Screen capture, recording, geometry, update check
   Models/               Immutable data records and settings
 
-SnippingTool.Tests/     xUnit test project
+Pointframe.Tests/       xUnit test project
   Services/             Service unit tests
   ViewModels/           ViewModel unit tests
 ```
