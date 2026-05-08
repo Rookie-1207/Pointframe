@@ -73,8 +73,11 @@ public sealed class TelemetryServiceTests
         return mock.Object;
     }
 
+    private static IAppVersionService AppVersion(Version? version = null)
+        => Mock.Of<IAppVersionService>(s => s.Current == (version ?? new Version(1, 2, 3)));
+
     private static TelemetryService CreateSut(CapturingLogger logger, string? installId = "install-abc")
-        => new(logger, SettingsWithInstallId(installId));
+        => new(logger, SettingsWithInstallId(installId), AppVersion());
 
     [Fact]
     public void TrackEvent_WhenConnectionStringMissing_DoesNotThrow()
@@ -82,7 +85,7 @@ public sealed class TelemetryServiceTests
         // Arrange
         var config = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
         config.Setup(c => c["ApplicationInsights:ConnectionString"]).Returns((string?)null);
-        var sut = new TelemetryService(config.Object, SettingsWithInstallId("id"));
+        var sut = new TelemetryService(config.Object, SettingsWithInstallId("id"), AppVersion());
 
         // Act
         var ex = Record.Exception(() => sut.TrackEvent("some_event"));
@@ -97,7 +100,7 @@ public sealed class TelemetryServiceTests
         // Arrange
         var config = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
         config.Setup(c => c["ApplicationInsights:ConnectionString"]).Returns((string?)null);
-        var sut = new TelemetryService(config.Object, SettingsWithInstallId("id"));
+        var sut = new TelemetryService(config.Object, SettingsWithInstallId("id"), AppVersion());
 
         // Act
         var ex = Record.Exception(() => sut.TrackException(new InvalidOperationException("oops")));
@@ -160,6 +163,20 @@ public sealed class TelemetryServiceTests
 
         // Assert
         Assert.Equal("abc123", logger.Entries[0].Scope["install_id"]);
+    }
+
+    [Fact]
+    public void TrackEvent_IncludesVersionInScope()
+    {
+        // Arrange
+        var logger = new CapturingLogger();
+        var sut = new TelemetryService(logger, SettingsWithInstallId("abc123"), AppVersion(new Version(9, 8, 7)));
+
+        // Act
+        sut.TrackEvent("annotation_committed");
+
+        // Assert
+        Assert.Equal("9.8.7", logger.Entries[0].Scope["version"]);
     }
 
     [Fact]
@@ -302,6 +319,20 @@ public sealed class TelemetryServiceTests
 
         // Assert
         Assert.Equal("install-xyz", logger.Entries[0].Scope["install_id"]);
+    }
+
+    [Fact]
+    public void TrackException_IncludesVersionInScope()
+    {
+        // Arrange
+        var logger = new CapturingLogger();
+        var sut = new TelemetryService(logger, SettingsWithInstallId("install-xyz"), AppVersion(new Version(9, 8, 7)));
+
+        // Act
+        sut.TrackException(new Exception("x"));
+
+        // Assert
+        Assert.Equal("9.8.7", logger.Entries[0].Scope["version"]);
     }
 
     [Fact]

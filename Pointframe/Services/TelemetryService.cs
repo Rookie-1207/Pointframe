@@ -9,11 +9,16 @@ internal sealed class TelemetryService : ITelemetryService, IDisposable
     private readonly ILogger? _logger;
     private readonly ILoggerFactory? _loggerFactory;
     private readonly IUserSettingsService _userSettings;
+    private readonly string _appVersion;
     private bool _disposed;
 
-    public TelemetryService(IConfiguration configuration, IUserSettingsService userSettings)
+    public TelemetryService(
+        IConfiguration configuration,
+        IUserSettingsService userSettings,
+        IAppVersionService appVersionService)
     {
         _userSettings = userSettings;
+        _appVersion = appVersionService.Current.ToString();
 
         var connectionString = configuration["ApplicationInsights:ConnectionString"];
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -37,9 +42,13 @@ internal sealed class TelemetryService : ITelemetryService, IDisposable
         _logger = _loggerFactory.CreateLogger("Pointframe.Telemetry");
     }
 
-    internal TelemetryService(ILogger logger, IUserSettingsService userSettings)
+    internal TelemetryService(
+        ILogger logger,
+        IUserSettingsService userSettings,
+        IAppVersionService appVersionService)
     {
         _userSettings = userSettings;
+        _appVersion = appVersionService.Current.ToString();
         _logger = logger;
     }
 
@@ -79,7 +88,11 @@ internal sealed class TelemetryService : ITelemetryService, IDisposable
 
     private Dictionary<string, object?> BuildScope(IReadOnlyDictionary<string, string>? properties)
     {
-        var scope = new Dictionary<string, object?>();
+        var scope = new Dictionary<string, object?>
+        {
+            ["version"] = _appVersion,
+        };
+
         var installId = _userSettings.Current.InstallId;
         if (!string.IsNullOrEmpty(installId))
         {

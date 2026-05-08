@@ -289,7 +289,7 @@ Pointframe collects **anonymous, privacy-safe usage telemetry** to help understa
 | `update_download_cancelled` | — |
 | `unhandled_exception` | `exception_type`, `context` |
 
-Every event includes an `install_id` — a random GUID generated once on first launch and stored locally. It is used only to count unique installs; it cannot be traced back to a person.
+Every event includes an `install_id` and the app `version`. The install ID is a random GUID generated once on first launch and stored locally. It is used only to count unique installs; it cannot be traced back to a person.
 
 **Nothing leaves your machine except these anonymised events.** Screenshots, recordings, and OCR output are never transmitted anywhere.
 
