@@ -136,3 +136,18 @@ jobs:
           tag_name: v${{ steps.version.outputs.display }}
           files: installer/output/Pointframe-${{ steps.version.outputs.display }}-x64-Setup.exe
           generate_release_notes: true
+
+      - name: Patch release body ($TAG placeholder)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v${{ steps.version.outputs.display }}"
+          $body = gh release view $tag --json body --jq '.body'
+          if ($body -match '\$TAG') {
+            $patched = $body -replace '\$TAG', $tag
+            gh release edit $tag --notes $patched
+            Write-Host "Patched `$TAG placeholder → $tag"
+          } else {
+            Write-Host "No `$TAG placeholder found in release body."
+          }
