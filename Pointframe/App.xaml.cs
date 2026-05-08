@@ -33,6 +33,7 @@ public partial class App : Application
     private IEventSubscription? _updateAvailableSubscription;
     private IEventSubscription? _recordingCompletedSubscription;
     private IEventSubscription? _captureCompletedSubscription;
+    private ITelemetryService _telemetry = null!;
     private SettingsWindow? _settingsWindow;
     private AboutWindow? _aboutWindow;
 
@@ -48,6 +49,7 @@ public partial class App : Application
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+            .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false)
             .Build();
 
         var logPath = System.IO.Path.Combine(
@@ -87,6 +89,7 @@ public partial class App : Application
         _globalHotkey = _host.Services.GetRequiredService<IGlobalHotkeyService>();
         _errorHandler = _host.Services.GetRequiredService<IAppErrorHandler>();
         _captureLaunch = _host.Services.GetRequiredService<ICaptureLaunchService>();
+        _telemetry = _host.Services.GetRequiredService<ITelemetryService>();
         _themeService.Apply(_userSettings.Current.Theme);
         if (!automationLaunchOptions.IsAutomationMode)
         {
@@ -98,6 +101,18 @@ public partial class App : Application
         }
 
         _logger.LogInformation("Pointframe starting up");
+
+        EnsureInstallId();
+
+        if (!automationLaunchOptions.IsAutomationMode)
+        {
+            var version = _host.Services.GetRequiredService<IAppVersionService>().Current;
+            _telemetry.TrackEvent("app_started", new Dictionary<string, string>
+            {
+                ["version"] = version.ToString(),
+                ["os_build"] = Environment.OSVersion.Version.ToString(),
+            });
+        }
 
         _errorHandler.Register();
 
@@ -117,6 +132,7 @@ public partial class App : Application
             _autoUpdate,
             _userSettings,
             _host.Services.GetRequiredService<IGifExportService>(),
+            _telemetry,
             onNewSnip: _captureLaunch.StartRegionSnip,
             onWholeScreenSnip: _captureLaunch.StartWholeScreenSnip,
             onOpenImage: () => Dispatcher.InvokeAsync(OpenImage, System.Windows.Threading.DispatcherPriority.ApplicationIdle),
@@ -136,6 +152,7 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<ITelemetryService, TelemetryService>();
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IAppVersionService, AppVersionService>();
         services.AddSingleton<IClipboardService, ClipboardService>();
@@ -196,6 +213,7 @@ public partial class App : Application
         sp.GetRequiredService<IMessageBoxService>(),
         sp.GetRequiredService<IFileSystemService>(),
         sp.GetRequiredService<IOcrService>(),
+        sp.GetRequiredService<ITelemetryService>(),
         sp.GetRequiredService<RecordingAnnotationViewModel>());
 
     protected override void OnExit(ExitEventArgs e)
@@ -206,6 +224,7 @@ public partial class App : Application
         _captureCompletedSubscription?.Dispose();
         _globalHotkey.Dispose();
         _trayIconManager?.Dispose();
+        _telemetry?.Flush();
         _host.StopAsync().GetAwaiter().GetResult();
         _host.Dispose();
         base.OnExit(e);
@@ -265,6 +284,7 @@ public partial class App : Application
         try
         {
             var bitmap = _imageFileService.LoadForAnnotation(selectedPath);
+            _telemetry.TrackEvent("open_image_used");
             ShowOverlayFromImage(bitmap, selectedPath);
         }
         catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException or NotSupportedException or IOException or UnauthorizedAccessException)
@@ -371,6 +391,8 @@ public partial class App : Application
 
     private ValueTask HandleUpdateAvailable(UpdateAvailableMessage message)
     {
+        var v = message.Result.LatestVersion;
+        _telemetry.TrackEvent("update_available", new Dictionary<string, string> { ["version"] = $"{v.Major}.{v.Minor}.{v.Build}" });
         _trayIconManager.HandleUpdateAvailable(message.Result);
         return ValueTask.CompletedTask;
     }
@@ -378,13 +400,34 @@ public partial class App : Application
     private ValueTask HandleRecordingCompleted(RecordingCompletedMessage message)
     {
         _trayIconManager.HandleRecordingCompleted(message.OutputPath, message.ElapsedText);
+        _telemetry.TrackEvent("recording_completed");
         return ValueTask.CompletedTask;
     }
 
     private ValueTask HandleCaptureCompleted(CaptureCompletedMessage message)
     {
         _trayIconManager.HandleCaptureCompleted(message.OutputPath);
+        _telemetry.TrackEvent("capture_completed", new Dictionary<string, string>
+        {
+            ["action"] = "copy",
+        });
         return ValueTask.CompletedTask;
+    }
+
+    private void EnsureInstallId()
+    {
+        if (string.IsNullOrEmpty(_userSettings.Current.InstallId))
+        {
+            try
+            {
+                _userSettings.Update(s => s.InstallId = Guid.NewGuid().ToString("N"));
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to persist install ID; telemetry will use an in-memory ID for this session.");
+                _userSettings.Current.InstallId = Guid.NewGuid().ToString("N");
+            }
+        }
     }
 }
 
