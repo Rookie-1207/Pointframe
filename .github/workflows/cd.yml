@@ -146,7 +146,7 @@ jobs:
           $body = gh release view $tag --json body --jq '.body'
           if ($body -match '\$TAG') {
             $patched = $body -replace '\$TAG', $tag
-            gh release edit $tag --notes $patched
+            gh release edit $tag --notes "$patched"
             Write-Host "Patched `$TAG placeholder → $tag"
           } else {
             Write-Host "No `$TAG placeholder found in release body."
