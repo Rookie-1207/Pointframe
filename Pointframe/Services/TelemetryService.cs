@@ -10,6 +10,8 @@ internal sealed class TelemetryService : ITelemetryService, IDisposable
     private readonly ILoggerFactory? _loggerFactory;
     private readonly IUserSettingsService _userSettings;
     private readonly string _appVersion;
+    private readonly string _sessionId = Guid.NewGuid().ToString("N");
+    private volatile string? _lastEventName;
     private bool _disposed;
 
     public TelemetryService(
@@ -59,6 +61,7 @@ internal sealed class TelemetryService : ITelemetryService, IDisposable
             return;
         }
 
+        _lastEventName = name;
         var scope = BuildScope(properties);
         using (_logger.BeginScope(scope))
         {
@@ -79,6 +82,12 @@ internal sealed class TelemetryService : ITelemetryService, IDisposable
             extra["context"] = context;
         }
 
+        var lastEvent = _lastEventName;
+        if (lastEvent is not null)
+        {
+            extra["last_action"] = lastEvent;
+        }
+
         var scope = BuildScope(extra);
         using (_logger.BeginScope(scope))
         {
@@ -91,6 +100,7 @@ internal sealed class TelemetryService : ITelemetryService, IDisposable
         var scope = new Dictionary<string, object?>
         {
             ["version"] = _appVersion,
+            ["session_id"] = _sessionId,
         };
 
         var installId = _userSettings.Current.InstallId;

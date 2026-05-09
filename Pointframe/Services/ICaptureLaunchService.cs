@@ -2,9 +2,9 @@ namespace Pointframe.Services;
 
 internal interface ICaptureLaunchService
 {
-    void StartRegionSnip();
+    void StartRegionSnip(string source = "tray");
 
-    void StartWholeScreenSnip();
+    void StartWholeScreenSnip(string source = "tray");
 
     void StartWholeScreenRecord();
 }

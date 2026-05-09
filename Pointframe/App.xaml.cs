@@ -34,6 +34,7 @@ public partial class App : Application
     private IEventSubscription? _recordingCompletedSubscription;
     private IEventSubscription? _captureCompletedSubscription;
     private ITelemetryService _telemetry = null!;
+    private DateTime _sessionStartTime;
     private SettingsWindow? _settingsWindow;
     private AboutWindow? _aboutWindow;
 
@@ -41,6 +42,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        var startupTimer = System.Diagnostics.Stopwatch.StartNew();
         var automationLaunchOptions = AutomationLaunchOptions.Parse(e.Args);
         base.OnStartup(e);
         _isAutomationMode = automationLaunchOptions.IsAutomationMode;
@@ -107,10 +109,12 @@ public partial class App : Application
         if (!automationLaunchOptions.IsAutomationMode)
         {
             var version = _host.Services.GetRequiredService<IAppVersionService>().Current;
+            _sessionStartTime = DateTime.UtcNow;
             _telemetry.TrackEvent("app_started", new Dictionary<string, string>
             {
                 ["version"] = version.ToString(),
                 ["os_build"] = Environment.OSVersion.Version.ToString(),
+                ["screen_count"] = System.Windows.Forms.Screen.AllScreens.Length.ToString(),
             });
         }
 
@@ -133,17 +137,22 @@ public partial class App : Application
             _userSettings,
             _host.Services.GetRequiredService<IGifExportService>(),
             _telemetry,
-            onNewSnip: _captureLaunch.StartRegionSnip,
-            onWholeScreenSnip: _captureLaunch.StartWholeScreenSnip,
+            onNewSnip: () => _captureLaunch.StartRegionSnip("tray"),
+            onWholeScreenSnip: () => _captureLaunch.StartWholeScreenSnip("tray"),
             onOpenImage: () => Dispatcher.InvokeAsync(OpenImage, System.Windows.Threading.DispatcherPriority.ApplicationIdle),
             onShowSettings: ShowSettingsWindow,
             onShowAbout: ShowAboutWindow);
         _trayIconManager.Initialize();
+        startupTimer.Stop();
+        _telemetry.TrackEvent("startup_completed", new Dictionary<string, string>
+        {
+            ["duration_ms"] = startupTimer.ElapsedMilliseconds.ToString(),
+        });
 #if DEBUG
         _trayIconManager.AddDebugMenuItems();
 #endif
-        _globalHotkey.RegionSnipRequested += _captureLaunch.StartRegionSnip;
-        _globalHotkey.WholeScreenSnipRequested += _captureLaunch.StartWholeScreenSnip;
+        _globalHotkey.RegionSnipRequested += () => _captureLaunch.StartRegionSnip("hotkey");
+        _globalHotkey.WholeScreenSnipRequested += () => _captureLaunch.StartWholeScreenSnip("hotkey");
         _globalHotkey.WholeScreenRecordRequested += _captureLaunch.StartWholeScreenRecord;
         _globalHotkey.Register();
         _logger.LogInformation("Global hotkey registered");
@@ -219,6 +228,13 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _logger?.LogInformation("Pointframe shutting down");
+        if (!_isAutomationMode && _sessionStartTime != default)
+        {
+            _telemetry?.TrackEvent("app_closed", new Dictionary<string, string>
+            {
+                ["session_minutes"] = ((int)(DateTime.UtcNow - _sessionStartTime).TotalMinutes).ToString(),
+            });
+        }
         _updateAvailableSubscription?.Dispose();
         _recordingCompletedSubscription?.Dispose();
         _captureCompletedSubscription?.Dispose();
@@ -400,7 +416,12 @@ public partial class App : Application
     private ValueTask HandleRecordingCompleted(RecordingCompletedMessage message)
     {
         _trayIconManager.HandleRecordingCompleted(message.OutputPath, message.ElapsedText);
-        _telemetry.TrackEvent("recording_completed");
+        Dictionary<string, string>? props = null;
+        if (TimeSpan.TryParseExact(message.ElapsedText, @"mm\:ss", null, out var duration))
+        {
+            props = new Dictionary<string, string> { ["duration_seconds"] = ((int)duration.TotalSeconds).ToString() };
+        }
+        _telemetry.TrackEvent("recording_completed", props);
         return ValueTask.CompletedTask;
     }
 

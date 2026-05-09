@@ -36,17 +36,17 @@ internal sealed class CaptureLaunchService : ICaptureLaunchService
         _telemetry = telemetry;
     }
 
-    public void StartRegionSnip()
+    public void StartRegionSnip(string source = "tray")
     {
         _logger.LogDebug("Region snip started");
-        _telemetry.TrackEvent("snip_started", new Dictionary<string, string> { ["type"] = "region" });
+        _telemetry.TrackEvent("snip_started", new Dictionary<string, string> { ["type"] = "region", ["source"] = source });
         LaunchCapture(wholeScreen: false);
     }
 
-    public void StartWholeScreenSnip()
+    public void StartWholeScreenSnip(string source = "tray")
     {
         _logger.LogDebug("Whole-screen snip started");
-        _telemetry.TrackEvent("snip_started", new Dictionary<string, string> { ["type"] = "whole_screen" });
+        _telemetry.TrackEvent("snip_started", new Dictionary<string, string> { ["type"] = "whole_screen", ["source"] = source });
         LaunchCapture(wholeScreen: true);
     }
 
@@ -72,6 +72,7 @@ internal sealed class CaptureLaunchService : ICaptureLaunchService
 
         if (selection is null)
         {
+            _telemetry.TrackEvent("snip_cancelled", new Dictionary<string, string> { ["type"] = wholeScreen ? "whole_screen" : "region" });
             return;
         }
 

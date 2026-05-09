@@ -401,6 +401,8 @@ internal sealed class TrayIconManager : ITrayIconManager
         menuItem.IsEnabled = false;
         _telemetry.TrackEvent("gif_export_started");
 
+        var sw = Stopwatch.StartNew();
+        var success = true;
         try
         {
             await _gifExportService.Export(recentRecording.OutputPath, gifPath, _userSettings.Current.GifFps).ConfigureAwait(true);
@@ -412,12 +414,19 @@ internal sealed class TrayIconManager : ITrayIconManager
         }
         catch (Exception ex)
         {
+            success = false;
             _logger.LogError(ex, "GIF export from recent recordings failed for {Path}", recentRecording.OutputPath);
             _telemetry.TrackException(ex, "gif_export");
             _messageBox.ShowWarning("The GIF export failed. Please try again.", "Export to GIF");
         }
         finally
         {
+            sw.Stop();
+            _telemetry.TrackEvent("gif_export_completed", new Dictionary<string, string>
+            {
+                ["success"] = success ? "true" : "false",
+                ["duration_seconds"] = ((int)sw.Elapsed.TotalSeconds).ToString(),
+            });
             menuItem.IsEnabled = true;
         }
     }

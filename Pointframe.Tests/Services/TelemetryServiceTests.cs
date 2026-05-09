@@ -336,6 +336,83 @@ public sealed class TelemetryServiceTests
     }
 
     [Fact]
+    public void TrackEvent_IncludesSessionIdInScope()
+    {
+        // Arrange
+        var logger = new CapturingLogger();
+        var sut = CreateSut(logger);
+
+        // Act
+        sut.TrackEvent("snip_started");
+
+        // Assert
+        Assert.True(logger.Entries[0].Scope.ContainsKey("session_id"));
+        Assert.NotNull(logger.Entries[0].Scope["session_id"]);
+    }
+
+    [Fact]
+    public void TrackEvent_SessionIdIsConsistentAcrossEvents()
+    {
+        // Arrange
+        var logger = new CapturingLogger();
+        var sut = CreateSut(logger);
+
+        // Act
+        sut.TrackEvent("snip_started");
+        sut.TrackEvent("capture_completed");
+
+        // Assert
+        var first = logger.Entries[0].Scope["session_id"];
+        var second = logger.Entries[1].Scope["session_id"];
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public void TrackEvent_SessionIdDiffersAcrossInstances()
+    {
+        // Arrange
+        var logger = new CapturingLogger();
+        var sut1 = CreateSut(logger);
+        var sut2 = CreateSut(logger);
+
+        // Act
+        sut1.TrackEvent("snip_started");
+        sut2.TrackEvent("snip_started");
+
+        // Assert
+        Assert.NotEqual(logger.Entries[0].Scope["session_id"], logger.Entries[1].Scope["session_id"]);
+    }
+
+    [Fact]
+    public void TrackException_IncludesLastActionWhenEventWasPreviouslyTracked()
+    {
+        // Arrange
+        var logger = new CapturingLogger();
+        var sut = CreateSut(logger);
+        sut.TrackEvent("annotation_committed");
+
+        // Act
+        sut.TrackException(new InvalidOperationException("boom"));
+
+        // Assert
+        Assert.Equal("annotation_committed", logger.Entries[1].Scope["last_action"]);
+    }
+
+    [Fact]
+    public void TrackException_OmitsLastActionWhenNoEventWasPreviouslyTracked()
+    {
+        // Arrange
+        var logger = new CapturingLogger();
+        var sut = CreateSut(logger);
+
+        // Act
+        sut.TrackException(new InvalidOperationException("boom"));
+
+        // Assert
+        Assert.DoesNotContain("last_action", logger.Entries[0].Scope.Keys);
+    }
+
+    [Fact]
     public void Dispose_CanBeCalledTwice()
     {
         // Arrange
