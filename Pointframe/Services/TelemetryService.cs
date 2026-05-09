@@ -34,6 +34,7 @@ internal sealed class TelemetryService : ITelemetryService, IDisposable
                 .SetMinimumLevel(LogLevel.Trace)
                 .AddOpenTelemetry(otel =>
                 {
+                    otel.IncludeScopes = true;
                     otel.AddAzureMonitorLogExporter(options =>
                     {
                         options.ConnectionString = connectionString;
