@@ -208,6 +208,7 @@ public partial class App : Application
         services.AddSingleton<AutoUpdateService>();
         services.AddSingleton<IAutoUpdateService>(sp => sp.GetRequiredService<AutoUpdateService>());
         services.AddHostedService(sp => sp.GetRequiredService<AutoUpdateService>());
+        services.AddHostedService<TelemetryHeartbeatService>();
     }
 
     private static OverlayWindow CreateOverlayWindow(IServiceProvider sp) => new(
