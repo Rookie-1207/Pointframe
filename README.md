@@ -27,7 +27,13 @@
 </p>
 
 <p align="center">
-  <video src="https://raw.githubusercontent.com/dimitar-radenkov/Pointframe/master/website/hero-demo.mp4" width="100%" controls autoplay loop muted></video>
+  <a href="https://dimitar-radenkov.github.io/Pointframe/hero-demo.mp4">Watch the latest Pointframe demo video</a>
+</p>
+
+<p align="center">
+  <a href="https://dimitar-radenkov.github.io/Pointframe/hero-demo.mp4">
+    <img src="website/social-preview.png" alt="Pointframe demo preview" width="100%">
+  </a>
 </p>
 
 ## 🚀 Quick Start
