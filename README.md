@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <video src="https://github.com/user-attachments/assets/d4e0c937-a845-4266-9454-2b816934f949" width="100%" controls autoplay loop muted></video>
+  <video src="https://raw.githubusercontent.com/dimitar-radenkov/Pointframe/master/website/hero-demo.mp4" width="100%" controls autoplay loop muted></video>
 </p>
 
 ## 🚀 Quick Start
