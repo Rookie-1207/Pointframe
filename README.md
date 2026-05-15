@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <a href="https://dimitar-radenkov.github.io/Pointframe/hero-demo.mp4">Watch the latest Pointframe demo video</a>
+  <video src="https://dimitar-radenkov.github.io/Pointframe/hero-demo.mp4" width="100%" controls autoplay loop muted></video>
 </p>
 
 <p align="center">
