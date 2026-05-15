@@ -377,3 +377,4 @@ MigrationBackup/
 /Pointframe/appsettings.Local.json
 
 .playwright-mcp/
+*.lscache

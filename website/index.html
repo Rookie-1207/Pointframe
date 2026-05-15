@@ -70,6 +70,7 @@
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#compare" class="nav-link">Compare</a>
                 <a href="#resources" class="nav-link">Guides</a>
+                <a href="#use-cases" class="nav-link">Use Cases</a>
                 <a href="https://github.com/dimitar-radenkov/Pointframe" target="_blank" rel="noopener noreferrer" class="github-link" aria-label="Open Pointframe on GitHub">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
@@ -89,6 +90,18 @@
             <p class="hero-copy">
                 Pointframe is a Windows screen capture and recording tool with live annotations, OCR, blur redaction, and pinned screenshots. Built for bug reports, tutorials, and fast feedback.
             </p>
+
+            <div class="proof-badges" aria-label="Product proof points">
+                <a class="proof-badge" href="https://github.com/dimitar-radenkov/Pointframe" target="_blank" rel="noopener noreferrer">
+                    <img src="https://img.shields.io/github/stars/dimitar-radenkov/Pointframe?style=flat-square&label=GitHub%20stars" alt="GitHub stars badge for Pointframe">
+                </a>
+                <a class="proof-badge" href="https://github.com/dimitar-radenkov/Pointframe/releases/latest" target="_blank" rel="noopener noreferrer">
+                    <img src="https://img.shields.io/github/downloads/dimitar-radenkov/Pointframe/total?style=flat-square&label=Downloads" alt="Total downloads badge for Pointframe releases">
+                </a>
+                <a class="proof-badge" href="https://winget.run/pkg/DimitarRadenkov/Pointframe" target="_blank" rel="noopener noreferrer">
+                    <img src="https://img.shields.io/badge/winget-DimitarRadenkov.Pointframe-0ea5e9?style=flat-square" alt="Pointframe winget package badge">
+                </a>
+            </div>
             
             <div class="hero-actions">
                 <a href="https://github.com/dimitar-radenkov/Pointframe/releases/latest" class="primary-button">
@@ -109,10 +122,35 @@
             <p id="copy-command-status" class="copy-status" role="status" aria-live="polite"></p>
             <p class="copy-status">Pointframe uses the winget package ID DimitarRadenkov.Pointframe starting with the 5.0 release line.</p>
 
+            <div class="trust-strip" aria-label="Trust and setup highlights">
+                <span>Free and open source</span>
+                <span>No account required</span>
+                <span>Install in seconds with winget</span>
+                <span>Built for Windows 10 and 11</span>
+            </div>
+
+            <div class="workflow-grid" aria-label="Common Pointframe workflows">
+                <article class="workflow-card">
+                    <h2 class="workflow-title">Report bugs faster</h2>
+                    <p class="workflow-copy">Capture, annotate with arrows and numbers, and attach clear evidence to tickets without switching tools.</p>
+                    <a href="./screen-capture-bug-reports.html" class="workflow-link">See bug report workflow</a>
+                </article>
+                <article class="workflow-card">
+                    <h2 class="workflow-title">Create guided recordings</h2>
+                    <p class="workflow-copy">Record your screen with live drawing, blur sensitive data, and export MP4 or GIF for docs and demos.</p>
+                    <a href="./screen-recorder-with-annotations-windows.html" class="workflow-link">See recording workflow</a>
+                </article>
+                <article class="workflow-card">
+                    <h2 class="workflow-title">Extract text instantly</h2>
+                    <p class="workflow-copy">Use OCR to copy text from screenshots and UI states when regular copy paste is not possible.</p>
+                    <a href="./copy-text-from-screenshot-windows.html" class="workflow-link">See OCR workflow</a>
+                </article>
+            </div>
+
             <!-- Video Demo -->
             <div class="video-shell">
                 <div class="video-overlay"></div>
-                <video src="https://github.com/user-attachments/assets/d4e0c937-a845-4266-9454-2b816934f949" class="video-player" autoplay loop muted controls></video>
+                <video src="./hero-demo.mp4" class="video-player" poster="./social-preview.png" autoplay loop muted controls></video>
             </div>
         </div>
     </main>
@@ -250,6 +288,30 @@
                     <h3 class="resource-title">Screen capture tool for bug reports</h3>
                     <p class="resource-copy">Capture, annotate with numbered steps, and attach evidence to tickets without leaving your workflow.</p>
                 </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="use-cases" class="section section-alt">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Pick the workflow that matches your role</h2>
+                <p class="section-copy">Pointframe is designed for practical communication in product, engineering, and support teams.</p>
+            </div>
+
+            <div class="use-case-grid">
+                <article class="comparison-card">
+                    <h3 class="comparison-title">For QA and testing</h3>
+                    <p class="comparison-copy">Capture reproducible visual evidence, annotate expected versus actual behavior, and attach one artifact to your issue tracker.</p>
+                </article>
+                <article class="comparison-card">
+                    <h3 class="comparison-title">For support and success</h3>
+                    <p class="comparison-copy">Respond to customer issues with short, clear recordings that show fixes step by step without extra editing overhead.</p>
+                </article>
+                <article class="comparison-card">
+                    <h3 class="comparison-title">For product and engineering</h3>
+                    <p class="comparison-copy">Share async walkthroughs, capture edge cases quickly, and keep implementation context visible with pinned screenshots.</p>
+                </article>
             </div>
         </div>
     </section>
