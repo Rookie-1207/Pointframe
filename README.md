@@ -30,12 +30,6 @@
   <video src="https://github.com/user-attachments/assets/bb6387d7-5ab9-4e91-91d5-fbe539a7ad13" width="100%" controls autoplay loop muted></video>
 </p>
 
-<p align="center">
-  <a href="https://github.com/user-attachments/assets/bb6387d7-5ab9-4e91-91d5-fbe539a7ad13">
-    <img src="website/hero-demo.gif" alt="Pointframe demo preview" width="100%">
-  </a>
-</p>
-
 ## 🚀 Quick Start
 
 Get up and running in seconds using the Windows Package Manager (winget):
