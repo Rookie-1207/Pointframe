@@ -151,14 +151,27 @@ internal sealed class TrayIconManager : ITrayIconManager
         contextMenu.Items.Add(CreateTrayMenuItem("New Snip", NewSnip_Click));
         contextMenu.Items.Add(CreateTrayMenuItem("Whole screen snip", WholeScreenSnip_Click));
         contextMenu.Items.Add(CreateTrayMenuItem("Open image...", OpenImage_Click));
+        contextMenu.Items.Add(CreateOpenFoldersMenuItem());
         contextMenu.Items.Add(new WpfSeparator());
         contextMenu.Items.Add(CreateTrayMenuItem("Settings", Settings_Click));
         contextMenu.Items.Add(CreateTrayMenuItem("Check for Updates", CheckForUpdates_Click));
-        contextMenu.Items.Add(CreateTrayMenuItem("Open Logs Folder", OpenLogsFolder_Click));
         contextMenu.Items.Add(CreateTrayMenuItem("About", About_Click));
         contextMenu.Items.Add(new WpfSeparator());
         contextMenu.Items.Add(CreateTrayMenuItem("Exit", Exit_Click));
         return contextMenu;
+    }
+
+    private WpfMenuItem CreateOpenFoldersMenuItem()
+    {
+        var openFoldersMenuItem = new WpfMenuItem
+        {
+            Header = "Open folders",
+        };
+
+        openFoldersMenuItem.Items.Add(CreateTrayMenuItem("Snips folder", OpenSnipsFolder_Click));
+        openFoldersMenuItem.Items.Add(CreateTrayMenuItem("Videos folder", OpenVideosFolder_Click));
+        openFoldersMenuItem.Items.Add(CreateTrayMenuItem("Logs folder", OpenLogsFolder_Click));
+        return openFoldersMenuItem;
     }
 
     internal static WpfMenuItem CreateTrayMenuItem(string header, RoutedEventHandler clickHandler)
@@ -178,10 +191,33 @@ internal sealed class TrayIconManager : ITrayIconManager
     private void About_Click(object sender, RoutedEventArgs e) => _onShowAbout();
     private void OpenImage_Click(object sender, RoutedEventArgs e) => _onOpenImage();
     private void Exit_Click(object sender, RoutedEventArgs e) => WpfApplication.Current.Shutdown();
+
+    private void OpenSnipsFolder_Click(object sender, RoutedEventArgs e)
+    {
+        OpenConfiguredFolder(_userSettings.Current.ScreenshotSavePath);
+    }
+
+    private void OpenVideosFolder_Click(object sender, RoutedEventArgs e)
+    {
+        OpenConfiguredFolder(_userSettings.Current.RecordingOutputPath);
+    }
+
     private void OpenLogsFolder_Click(object sender, RoutedEventArgs e)
     {
         Directory.CreateDirectory(AppPaths.LogsDirectory);
         OpenFolder(AppPaths.LogsDirectory);
+    }
+
+    private void ClearRecentCaptures_Click(object sender, RoutedEventArgs e)
+    {
+        _recentCaptures.Clear();
+        RebuildRecentCapturesMenu();
+    }
+
+    private void ClearRecentRecordings_Click(object sender, RoutedEventArgs e)
+    {
+        _recentRecordings.Clear();
+        RebuildRecentRecordingsMenu();
     }
 
     private void InitializeRecentCapturesMenu()
@@ -196,7 +232,7 @@ internal sealed class TrayIconManager : ITrayIconManager
             Header = "Recent captures",
         };
 
-        contextMenu.Items.Insert(2, _recentCapturesMenuItem);
+        contextMenu.Items.Insert(3, _recentCapturesMenuItem);
         RebuildRecentCapturesMenu();
     }
 
@@ -216,33 +252,57 @@ internal sealed class TrayIconManager : ITrayIconManager
                 Header = "No recent captures",
                 IsEnabled = false,
             });
+            _recentCapturesMenuItem.Items.Add(new WpfSeparator());
+            var openFolder = CreateTrayMenuItem("Open Snips folder", OpenSnipsFolder_Click);
+            _recentCapturesMenuItem.Items.Add(openFolder);
             return;
         }
 
         foreach (var capturePath in _recentCaptures)
         {
-            var captureItem = new WpfMenuItem
+            var fileName = Path.GetFileName(capturePath);
+            var panel = new System.Windows.Controls.StackPanel
             {
-                Header = Path.GetFileName(capturePath),
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
             };
-            captureItem.Items.Add(CreateRecentCaptureActionMenuItem("Open", OpenRecentCapture_Click, capturePath));
-            captureItem.Items.Add(CreateRecentCaptureActionMenuItem("Open folder", OpenRecentCaptureFolder_Click, capturePath));
-            _recentCapturesMenuItem.Items.Add(captureItem);
-        }
-    }
+            var textBlock = new System.Windows.Controls.TextBlock
+            {
+                Text = fileName,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Margin = new System.Windows.Thickness(0, 0, 8, 0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Tag = capturePath,
+            };
+            textBlock.MouseLeftButtonDown += (_, args) =>
+            {
+                OpenRecentCapture_Click(textBlock, new RoutedEventArgs());
+                args.Handled = true;
+            };
 
-    private static WpfMenuItem CreateRecentCaptureActionMenuItem(
-        string header,
-        RoutedEventHandler clickHandler,
-        string capturePath)
-    {
-        var menuItem = new WpfMenuItem
-        {
-            Header = header,
-            Tag = capturePath,
-        };
-        menuItem.Click += clickHandler;
-        return menuItem;
+            var button = CreateRecentActionButton("📁", "Open folder", capturePath, "Open capture folder");
+            System.Windows.Automation.AutomationProperties.SetName(button, "Open capture folder");
+            button.Click += (_, args) =>
+            {
+                OpenRecentCaptureFolder_Click(button, new RoutedEventArgs());
+                args.Handled = true;
+            };
+
+            panel.Children.Add(textBlock);
+            panel.Children.Add(button);
+
+            var menuItem = new WpfMenuItem
+            {
+                Header = panel,
+                Tag = capturePath,
+            };
+            menuItem.Click += OpenRecentCapture_Click;
+            _recentCapturesMenuItem.Items.Add(menuItem);
+        }
+
+        _recentCapturesMenuItem.Items.Add(new WpfSeparator());
+        var clearRecent = CreateTrayMenuItem("Clear recent captures", ClearRecentCaptures_Click);
+        _recentCapturesMenuItem.Items.Add(clearRecent);
     }
 
     private void InitializeRecentRecordingsMenu()
@@ -257,7 +317,7 @@ internal sealed class TrayIconManager : ITrayIconManager
             Header = "Recent recordings",
         };
 
-        contextMenu.Items.Insert(3, _recentRecordingsMenuItem);
+        contextMenu.Items.Insert(4, _recentRecordingsMenuItem);
         RebuildRecentRecordingsMenu();
     }
 
@@ -277,39 +337,74 @@ internal sealed class TrayIconManager : ITrayIconManager
                 Header = "No recent recordings",
                 IsEnabled = false,
             });
+            _recentRecordingsMenuItem.Items.Add(new WpfSeparator());
+            var openFolder = CreateTrayMenuItem("Open Videos folder", OpenVideosFolder_Click);
+            _recentRecordingsMenuItem.Items.Add(openFolder);
             return;
         }
 
         foreach (var recentRecording in _recentRecordings)
         {
-            var recentRecordingItem = new WpfMenuItem
+            var fileName = $"{recentRecording.FileName} ({recentRecording.ElapsedText})";
+            var panel = new System.Windows.Controls.StackPanel
             {
-                Header = $"{recentRecording.FileName} ({recentRecording.ElapsedText})",
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
             };
-            recentRecordingItem.Items.Add(CreateRecentRecordingActionMenuItem("Open", OpenRecentRecording_Click, recentRecording));
-            recentRecordingItem.Items.Add(CreateRecentRecordingActionMenuItem("Open folder", OpenRecentRecordingFolder_Click, recentRecording));
-            recentRecordingItem.Items.Add(CreateRecentRecordingActionMenuItem("Export to GIF", ExportRecentRecordingGif_Click, recentRecording));
-            _recentRecordingsMenuItem.Items.Add(recentRecordingItem);
-        }
-    }
+            var textBlock = new System.Windows.Controls.TextBlock
+            {
+                Text = fileName,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Margin = new System.Windows.Thickness(0, 0, 6, 0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Tag = recentRecording,
+            };
+            textBlock.MouseLeftButtonDown += (_, args) =>
+            {
+                OpenRecentRecording_Click(textBlock, new RoutedEventArgs());
+                args.Handled = true;
+            };
 
-    private static WpfMenuItem CreateRecentRecordingActionMenuItem(
-        string header,
-        RoutedEventHandler clickHandler,
-        RecentRecordingItem recentRecording)
-    {
-        var menuItem = new WpfMenuItem
-        {
-            Header = header,
-            Tag = recentRecording,
-        };
-        menuItem.Click += clickHandler;
-        return menuItem;
+            var gifButton = CreateRecentActionButton(
+                "🎬",
+                "Export to GIF",
+                recentRecording,
+                "Export recording to GIF",
+                new System.Windows.Thickness(0, 0, 4, 0));
+            gifButton.Click += (_, args) =>
+            {
+                ExportRecentRecordingGif_Click(gifButton, new RoutedEventArgs());
+                args.Handled = true;
+            };
+
+            var folderButton = CreateRecentActionButton("📁", "Open folder", recentRecording, "Open recording folder");
+            folderButton.Click += (_, args) =>
+            {
+                OpenRecentRecordingFolder_Click(folderButton, new RoutedEventArgs());
+                args.Handled = true;
+            };
+
+            panel.Children.Add(textBlock);
+            panel.Children.Add(gifButton);
+            panel.Children.Add(folderButton);
+
+            var menuItem = new WpfMenuItem
+            {
+                Header = panel,
+                Tag = recentRecording,
+            };
+            menuItem.Click += OpenRecentRecording_Click;
+            _recentRecordingsMenuItem.Items.Add(menuItem);
+        }
+
+        _recentRecordingsMenuItem.Items.Add(new WpfSeparator());
+        var clearRecent = CreateTrayMenuItem("Clear recent recordings", ClearRecentRecordings_Click);
+        _recentRecordingsMenuItem.Items.Add(clearRecent);
     }
 
     private void OpenRecentCapture_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfMenuItem { Tag: string capturePath })
+        if (!TryGetTaggedValue(sender, out string capturePath))
         {
             return;
         }
@@ -319,7 +414,7 @@ internal sealed class TrayIconManager : ITrayIconManager
 
     private void OpenRecentCaptureFolder_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfMenuItem { Tag: string capturePath })
+        if (!TryGetTaggedValue(sender, out string capturePath))
         {
             return;
         }
@@ -367,7 +462,7 @@ internal sealed class TrayIconManager : ITrayIconManager
 
     private void OpenRecentRecording_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfMenuItem { Tag: RecentRecordingItem recentRecording })
+        if (!TryGetTaggedValue(sender, out RecentRecordingItem recentRecording))
         {
             return;
         }
@@ -377,7 +472,7 @@ internal sealed class TrayIconManager : ITrayIconManager
 
     private void OpenRecentRecordingFolder_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfMenuItem { Tag: RecentRecordingItem recentRecording })
+        if (!TryGetTaggedValue(sender, out RecentRecordingItem recentRecording))
         {
             return;
         }
@@ -391,7 +486,7 @@ internal sealed class TrayIconManager : ITrayIconManager
 
     private async void ExportRecentRecordingGif_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfMenuItem { Tag: RecentRecordingItem recentRecording } menuItem)
+        if (!TryGetTaggedValue(sender, out RecentRecordingItem recentRecording) || sender is not UIElement senderElement)
         {
             return;
         }
@@ -403,7 +498,7 @@ internal sealed class TrayIconManager : ITrayIconManager
         }
 
         var gifPath = Path.ChangeExtension(recentRecording.OutputPath, ".gif");
-        menuItem.IsEnabled = false;
+        senderElement.IsEnabled = false;
         _telemetry.TrackEvent("gif_export_started");
 
         var sw = Stopwatch.StartNew();
@@ -432,7 +527,7 @@ internal sealed class TrayIconManager : ITrayIconManager
                 ["success"] = success ? "true" : "false",
                 ["duration_seconds"] = ((int)sw.Elapsed.TotalSeconds).ToString(),
             });
-            menuItem.IsEnabled = true;
+            senderElement.IsEnabled = true;
         }
     }
 
@@ -482,6 +577,69 @@ internal sealed class TrayIconManager : ITrayIconManager
     private void OpenFolder(string path)
     {
         _processService.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\""));
+    }
+
+    private void OpenConfiguredFolder(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(path);
+            OpenFolder(path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open configured folder: {Path}", path);
+            _messageBox.ShowWarning(
+                "Could not open the configured folder. Please verify the path in Settings.",
+                "Open Folder");
+        }
+    }
+
+    private static bool TryGetTaggedValue<T>(object sender, out T value)
+    {
+        if (sender is FrameworkElement { Tag: T taggedValue })
+        {
+            value = taggedValue;
+            return true;
+        }
+
+        value = default!;
+        return false;
+    }
+
+    private static System.Windows.Controls.Button CreateRecentActionButton(
+        string content,
+        string tooltip,
+        object tag,
+        string automationName,
+        System.Windows.Thickness? margin = null)
+    {
+        var button = new System.Windows.Controls.Button
+        {
+            Content = content,
+            Width = 32,
+            Height = 28,
+            Padding = new System.Windows.Thickness(4),
+            ToolTip = tooltip,
+            Tag = tag,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Margin = margin ?? new System.Windows.Thickness(0),
+            Opacity = 0.88,
+        };
+
+        button.SetResourceReference(System.Windows.Controls.Control.BackgroundProperty, System.Windows.SystemColors.ControlLightBrushKey);
+        button.SetResourceReference(System.Windows.Controls.Control.BorderBrushProperty, System.Windows.SystemColors.ActiveBorderBrushKey);
+        button.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, System.Windows.SystemColors.ControlTextBrushKey);
+        System.Windows.Automation.AutomationProperties.SetName(button, automationName);
+
+        button.MouseEnter += (_, _) => button.Opacity = 1.0;
+        button.MouseLeave += (_, _) => button.Opacity = 0.88;
+        return button;
     }
 
     private void SimulateUiError_Click(object sender, RoutedEventArgs e)
