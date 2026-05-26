@@ -553,7 +553,7 @@
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
-                Command="{Binding UndoCommand}" ToolTip="Undo (Ctrl+Z)">
+          Command="{Binding UndoCommand}" ToolTip="{Binding UndoToolTip}">
           <StackPanel>
             <TextBlock Text="&#xE7A7;" Style="{StaticResource FluentActionIconText}"/>
             <TextBlock Text="Undo" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
@@ -563,7 +563,7 @@
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
-                Command="{Binding RedoCommand}" ToolTip="Redo (Ctrl+Y)">
+          Command="{Binding RedoCommand}" ToolTip="{Binding RedoToolTip}">
           <StackPanel>
             <TextBlock Text="&#xE7A6;" Style="{StaticResource FluentActionIconText}"/>
             <TextBlock Text="Redo" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
@@ -573,11 +573,22 @@
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
-          Command="{Binding CopyCommand}" ToolTip="Copy to clipboard (Ctrl+C)"
+          Command="{Binding CopyCommand}" ToolTip="{Binding CopyToolTip}"
           AutomationProperties.AutomationId="OverlayWindow.Copy">
           <StackPanel>
             <TextBlock Text="&#xE8C8;" Style="{StaticResource FluentActionIconText}"/>
             <TextBlock Text="Copy" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+
+        <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
+
+        <Button Style="{StaticResource ActionBtn}"
+          Command="{Binding SaveAsCommand}" ToolTip="{Binding SaveAsToolTip}"
+                AutomationProperties.AutomationId="OverlayWindow.SaveAs">
+          <StackPanel>
+            <TextBlock Text="&#xE792;" Style="{StaticResource FluentActionIconText}"/>
+            <TextBlock Text="Save As" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
 
@@ -632,7 +643,7 @@
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
-                Click="CloseBtn_Click" ToolTip="Close (Esc)"
+          Click="CloseBtn_Click" ToolTip="{Binding CloseToolTip}"
                 AutomationProperties.AutomationId="OverlayWindow.Close">
           <StackPanel>
             <TextBlock Text="&#xE711;" Style="{StaticResource FluentActionIconText}"/>
@@ -663,23 +674,31 @@
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
-                Command="{Binding UndoCommand}" ToolTip="Undo (Ctrl+Z)">
+          Command="{Binding UndoCommand}" ToolTip="{Binding UndoToolTip}">
           <TextBlock Text="&#xE7A7;" Style="{StaticResource FluentActionIconText}"/>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
-                Command="{Binding RedoCommand}" ToolTip="Redo (Ctrl+Y)">
+          Command="{Binding RedoCommand}" ToolTip="{Binding RedoToolTip}">
           <TextBlock Text="&#xE7A6;" Style="{StaticResource FluentActionIconText}"/>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
-                Command="{Binding CopyCommand}" ToolTip="Copy to clipboard (Ctrl+C)"
+          Command="{Binding CopyCommand}" ToolTip="{Binding CopyToolTip}"
                 AutomationProperties.AutomationId="OverlayWindow.CompactCopy">
           <TextBlock Text="&#xE8C8;" Style="{StaticResource FluentActionIconText}"/>
+        </Button>
+
+        <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
+
+        <Button Style="{StaticResource ActionBtn}"
+          Command="{Binding SaveAsCommand}" ToolTip="{Binding SaveAsToolTip}"
+          AutomationProperties.AutomationId="OverlayWindow.CompactSaveAs">
+          <TextBlock Text="&#xE792;" Style="{StaticResource FluentActionIconText}"/>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
@@ -724,7 +743,7 @@
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
-                Click="CloseBtn_Click" ToolTip="Close (Esc)"
+          Click="CloseBtn_Click" ToolTip="{Binding CloseToolTip}"
                 AutomationProperties.AutomationId="OverlayWindow.CompactClose">
           <TextBlock Text="&#xE711;" Style="{StaticResource FluentActionIconText}"/>
         </Button>
@@ -739,6 +758,31 @@
       <TextBlock x:Name="OcrToastText"
                  Foreground="White" FontSize="12"
                  FontFamily="Segoe UI" FontWeight="SemiBold"/>
+    </Border>
+
+    <Border x:Name="ShortcutsPopup"
+            Background="{DynamicResource ToolbarBackground}"
+            BorderBrush="{DynamicResource ToolbarBorder}"
+            BorderThickness="1"
+            CornerRadius="8"
+            MinWidth="220"
+            Padding="12"
+            Visibility="Collapsed"
+            Panel.ZIndex="120"
+          Canvas.Top="24"
+            AutomationProperties.AutomationId="OverlayWindow.ShortcutsPopup">
+      <Border.Effect>
+        <DropShadowEffect Color="#444444" BlurRadius="10" ShadowDepth="0" Opacity="0.4"/>
+      </Border.Effect>
+      <StackPanel>
+        <TextBlock Text="Shortcuts" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}"/>
+        <TextBlock Text="{Binding PopupToggleShortcutsText}" FontSize="11" Foreground="{DynamicResource SecondaryText}" Margin="0,6,0,0"/>
+        <TextBlock Text="{Binding PopupCopyText}" FontSize="11" Foreground="{DynamicResource SecondaryText}"/>
+        <TextBlock Text="{Binding PopupSaveAsText}" FontSize="11" Foreground="{DynamicResource SecondaryText}"/>
+        <TextBlock Text="{Binding PopupUndoText}" FontSize="11" Foreground="{DynamicResource SecondaryText}"/>
+        <TextBlock Text="{Binding PopupRedoText}" FontSize="11" Foreground="{DynamicResource SecondaryText}"/>
+        <TextBlock Text="{Binding PopupCloseText}" FontSize="11" Foreground="{DynamicResource SecondaryText}"/>
+      </StackPanel>
     </Border>
 
     <!-- Color picker loupe -->

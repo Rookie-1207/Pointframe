@@ -1,4 +1,5 @@
 using Moq;
+using System.Reflection;
 using Pointframe.Models;
 using Pointframe.Services;
 using Pointframe.ViewModels;
@@ -42,6 +43,88 @@ public sealed class SettingsViewModelTests
 
         // Assert
         Assert.Equal(0, settings.CaptureDelaySeconds);
+    }
+
+    [Fact]
+    public void Save_PersistsOverlayShortcutSettings()
+    {
+        var mock = new Mock<IUserSettingsService>();
+        mock.SetupGet(s => s.Current).Returns(new UserSettings());
+        UserSettings? saved = null;
+        mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
+
+        vm.OverlayCopyHotkey = 0x58u; // X
+        vm.OverlayCopyHotkeyModifiers = HotkeyModifiers.Alt;
+        vm.OverlaySaveAsHotkey = 0x41u; // A
+        vm.OverlaySaveAsHotkeyModifiers = HotkeyModifiers.Ctrl;
+
+        vm.SaveCommand.Execute(null);
+
+        Assert.NotNull(saved);
+        Assert.Equal(0x58u, saved!.OverlayCopyHotkey);
+        Assert.Equal(HotkeyModifiers.Alt, saved.OverlayCopyHotkeyModifiers);
+        Assert.Equal(0x41u, saved.OverlaySaveAsHotkey);
+        Assert.Equal(HotkeyModifiers.Ctrl, saved.OverlaySaveAsHotkeyModifiers);
+    }
+
+    [Fact]
+    public void StartCapturingOverlayShortcutCommand_SetsCaptureState()
+    {
+        var vm = CreateVm();
+
+        vm.StartCapturingOverlayShortcutCommand.Execute("OverlayRedo");
+
+        Assert.True(vm.IsCapturingOverlayShortcut);
+        Assert.Equal("OverlayRedo", vm.OverlayShortcutCaptureTarget);
+        Assert.Equal("Redo", vm.OverlayShortcutCaptureDisplayName);
+    }
+
+    [Fact]
+    public void ApplyOverlayShortcutCapture_WhenDuplicate_ShowsConflict_AndKeepsCaptureMode()
+    {
+        var vm = CreateVm();
+        vm.StartCapturingOverlayShortcutCommand.Execute("OverlaySaveAs");
+
+        var applyMethod = typeof(SettingsViewModel).GetMethod("ApplyOverlayShortcutCapture", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        Assert.NotNull(applyMethod);
+        applyMethod!.Invoke(vm, [0x43u, HotkeyModifiers.Ctrl]); // duplicates default OverlayCopy (Ctrl+C)
+
+        Assert.True(vm.IsCapturingOverlayShortcut);
+        Assert.True(vm.HasOverlayShortcutConflict);
+        Assert.Contains("already assigned", vm.OverlayShortcutConflictMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void StartCapturingOverlayShortcutCommand_ClearsOtherCaptureModes()
+    {
+        var vm = CreateVm();
+        vm.StartRecordingHotkeyCommand.Execute(null);
+        vm.StartCapturingWholeScreenRecordHotkeyCommand.Execute(null);
+
+        vm.StartCapturingOverlayShortcutCommand.Execute("OverlayUndo");
+
+        Assert.False(vm.IsRecordingHotkey);
+        Assert.False(vm.IsCapturingWholeScreenRecordHotkey);
+        Assert.True(vm.IsCapturingOverlayShortcut);
+        Assert.Equal("OverlayUndo", vm.OverlayShortcutCaptureTarget);
+    }
+
+    [Fact]
+    public void ApplyOverlayShortcutCapture_WhenUnique_AssignsAndExitsCaptureMode()
+    {
+        var vm = CreateVm();
+        vm.StartCapturingOverlayShortcutCommand.Execute("OverlayUndo");
+
+        var applyMethod = typeof(SettingsViewModel).GetMethod("ApplyOverlayShortcutCapture", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        Assert.NotNull(applyMethod);
+        applyMethod!.Invoke(vm, [0x55u, HotkeyModifiers.Alt]); // Alt+U
+
+        Assert.Equal(0x55u, vm.OverlayUndoHotkey);
+        Assert.Equal(HotkeyModifiers.Alt, vm.OverlayUndoHotkeyModifiers);
+        Assert.False(vm.IsCapturingOverlayShortcut);
+        Assert.False(vm.HasOverlayShortcutConflict);
+        Assert.Equal(string.Empty, vm.OverlayShortcutCaptureTarget);
     }
 
     [Fact]
@@ -663,5 +746,28 @@ public sealed class SettingsViewModelTests
         Assert.Equal(new UserSettings().WholeScreenRecordHotkey, vm.WholeScreenRecordHotkey);
         Assert.Equal(new UserSettings().WholeScreenRecordHotkeyModifiers, vm.WholeScreenRecordHotkeyModifiers);
         Assert.False(vm.IsCapturingWholeScreenRecordHotkey);
+    }
+
+    [Fact]
+    public void ResetCurrentSectionCommand_ShortcutsSection_ResetsOverlayShortcutsAndCaptureState()
+    {
+        var vm = CreateVm();
+        vm.OverlayCopyHotkey = 0x58u;
+        vm.OverlayCopyHotkeyModifiers = HotkeyModifiers.Alt;
+        vm.OverlaySaveAsHotkey = 0x41u;
+        vm.OverlaySaveAsHotkeyModifiers = HotkeyModifiers.Ctrl;
+        vm.SelectedSection = SettingsSection.Shortcuts;
+        vm.StartCapturingOverlayShortcutCommand.Execute("OverlaySaveAs");
+
+        vm.ResetCurrentSectionCommand.Execute(null);
+
+        var defaults = new UserSettings();
+        Assert.Equal(defaults.OverlayCopyHotkey, vm.OverlayCopyHotkey);
+        Assert.Equal(defaults.OverlayCopyHotkeyModifiers, vm.OverlayCopyHotkeyModifiers);
+        Assert.Equal(defaults.OverlaySaveAsHotkey, vm.OverlaySaveAsHotkey);
+        Assert.Equal(defaults.OverlaySaveAsHotkeyModifiers, vm.OverlaySaveAsHotkeyModifiers);
+        Assert.False(vm.IsCapturingOverlayShortcut);
+        Assert.Equal(string.Empty, vm.OverlayShortcutCaptureTarget);
+        Assert.Equal(string.Empty, vm.OverlayShortcutConflictMessage);
     }
 }

@@ -233,6 +233,104 @@ public sealed class SettingsWindowTests
     }
 
     [Fact]
+    public void ShortcutsRegionHotkeyCapture_PreviewKeyDown_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow();
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "ShortcutsRegionHotkeyCapture_PreviewKeyDown", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void ShortcutsRecordHotkeyCapture_PreviewKeyUp_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow();
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "ShortcutsRecordHotkeyCapture_PreviewKeyUp", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void OverlayShortcutCapture_PreviewKeyDown_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow();
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "OverlayShortcutCapture_PreviewKeyDown", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void OnOverlayShortcutKeyPressed_Escape_CancelsOverlayCapture()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.StartCapturingOverlayShortcutCommand.Execute("OverlaySaveAs");
+
+            InvokeCallback(window, "OnOverlayShortcutKeyPressed", NativeMethods.VK_ESCAPE, HotkeyModifiers.None);
+
+            Assert.False(viewModel.IsCapturingOverlayShortcut);
+        });
+    }
+
+    [Fact]
+    public void OnOverlayShortcutKeyPressed_AssignsShortcutToCaptureTarget()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.StartCapturingOverlayShortcutCommand.Execute("OverlayRedo");
+
+            InvokeCallback(window, "OnOverlayShortcutKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.J), HotkeyModifiers.Ctrl | HotkeyModifiers.Alt);
+
+            Assert.Equal((uint)KeyInterop.VirtualKeyFromKey(Key.J), viewModel.OverlayRedoHotkey);
+            Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Alt, viewModel.OverlayRedoHotkeyModifiers);
+            Assert.False(viewModel.IsCapturingOverlayShortcut);
+        });
+    }
+
+    [Fact]
+    public void OverlayShortcutRecordingPanel_IsVisibleChanged_WhenHidden_EndsCaptureMode()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var hotkeyServiceMock = new Mock<IGlobalHotkeyService>();
+            var window = CreateWindow(hotkeyServiceMock.Object, out _);
+            var panel = (StackPanel)window.FindName("OverlayShortcutRecordingPanel");
+            Assert.NotNull(panel);
+            var args = new DependencyPropertyChangedEventArgs(UIElement.IsVisibleProperty, true, false);
+
+            InvokePrivateHandler(window, "OverlayShortcutRecordingPanel_IsVisibleChanged", panel!, args);
+
+            hotkeyServiceMock.Verify(service => service.EndKeyCaptureMode(), Times.Once);
+        });
+    }
+
+    [Fact]
     public void HotkeyCapture_PreviewKeyDown_IgnoresModifierKeys()
     {
         StaTestHelper.Run(() =>
@@ -284,6 +382,47 @@ public sealed class SettingsWindowTests
     }
 
     [Fact]
+    public void SettingsWindow_ContainsShortcutsReference()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow();
+            window.Show();
+            window.UpdateLayout();
+
+            var navigation = FindByAutomationId<ListBox>(window, "SettingsWindow.SectionNavigation");
+            Assert.NotNull(navigation);
+            navigation!.SelectedValue = SettingsSection.Shortcuts;
+            window.UpdateLayout();
+
+            var shortcutsContent = FindByAutomationId<StackPanel>(window, "SettingsWindow.ShortcutsContent");
+            Assert.NotNull(shortcutsContent);
+            Assert.Equal(Visibility.Visible, shortcutsContent!.Visibility);
+
+            Assert.NotNull(FindByAutomationId<Border>(window, "SettingsWindow.ShortcutsReference"));
+            Assert.NotNull(FindByAutomationId<TextBlock>(window, "SettingsWindow.Shortcut.RegionSnip"));
+            Assert.NotNull(FindByAutomationId<TextBlock>(window, "SettingsWindow.Shortcut.WholeScreenRecord"));
+
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void SectionNavigation_ContainsShortcutsSection()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow();
+            window.Show();
+            window.UpdateLayout();
+
+            Assert.NotNull(FindByAutomationId<ListBoxItem>(window, "SettingsWindow.Section.Shortcuts"));
+
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void SectionNavigation_SelectedValue_UpdatesSelectedSection()
     {
         StaTestHelper.Run(() =>
@@ -305,6 +444,11 @@ public sealed class SettingsWindowTests
 
     private static SettingsWindow CreateWindow(out SettingsViewModel viewModel)
     {
+        return CreateWindow(Mock.Of<IGlobalHotkeyService>(), out viewModel);
+    }
+
+    private static SettingsWindow CreateWindow(IGlobalHotkeyService hotkeyService, out SettingsViewModel viewModel)
+    {
         var settings = new UserSettings { DefaultAnnotationColor = "#FFFF0000" };
         var settingsMock = new Mock<IUserSettingsService>();
         settingsMock.SetupGet(service => service.Current).Returns(settings);
@@ -315,7 +459,7 @@ public sealed class SettingsWindowTests
             Mock.Of<IMicrophoneDeviceService>(service =>
                 service.GetAvailableCaptureDeviceNames() == new[] { "Studio Mic", "USB Mic" } &&
                 service.GetDefaultCaptureDeviceName() == "Studio Mic"));
-        return new SettingsWindow(viewModel, Mock.Of<IGlobalHotkeyService>());
+        return new SettingsWindow(viewModel, hotkeyService);
     }
 
     private static SettingsWindow CreateWindow() => CreateWindow(out _);
