@@ -7,7 +7,7 @@ public sealed class UserSettings
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Pointframe", "Screenshots");
 
-    public bool AutoSaveScreenshots { get; set; } = false;
+    public bool AutoSaveScreenshots { get; set; } = true;
 
     public string RecordingOutputPath { get; set; } =
         System.IO.Path.Combine(
@@ -70,6 +70,8 @@ public sealed class UserSettings
         new() { Name = "Blue",  Color = "#FF1E90FF", StrokeThickness = 2.5 },
         new() { Name = "Black", Color = "#FF1A1A1A", StrokeThickness = 3.5 },
     ];
+
+    public ScreenshotWatermarkSettings ScreenshotWatermark { get; set; } = new();
 
     /// <summary>
     /// Anonymous install identifier generated once on first run.

@@ -1,6 +1,4 @@
-using System.IO;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 
 namespace Pointframe.Services;
 
@@ -42,6 +40,7 @@ public sealed class UserSettingsService : IUserSettingsService
             var loaded = JsonSerializer.Deserialize<UserSettings>(json);
             if (loaded is not null)
             {
+                loaded.ScreenshotWatermark ??= new Pointframe.Models.ScreenshotWatermarkSettings();
                 _logger.LogInformation("Settings loaded from {Path}", _settingsPath);
                 return loaded;
             }
@@ -154,9 +153,28 @@ public sealed class UserSettingsService : IUserSettingsService
                 Color = p.Color,
                 StrokeThickness = p.StrokeThickness,
             })],
+            ScreenshotWatermark = CloneWatermark(settings.ScreenshotWatermark),
             InstallId = settings.InstallId,
             InstallCreatedUtc = settings.InstallCreatedUtc,
             FirstCaptureCompletedTracked = settings.FirstCaptureCompletedTracked,
             FirstRecordingCompletedTracked = settings.FirstRecordingCompletedTracked,
         };
+
+    private static Pointframe.Models.ScreenshotWatermarkSettings CloneWatermark(Pointframe.Models.ScreenshotWatermarkSettings? source)
+    {
+        source ??= new Pointframe.Models.ScreenshotWatermarkSettings();
+        return new Pointframe.Models.ScreenshotWatermarkSettings
+        {
+            Enabled = source.Enabled,
+            TextTemplate = source.TextTemplate,
+            Position = source.Position,
+            FontSize = source.FontSize,
+            ColorHex = source.ColorHex,
+            BackgroundEnabled = source.BackgroundEnabled,
+            Opacity = source.Opacity,
+            Margin = source.Margin,
+            ApplyToCopy = source.ApplyToCopy,
+            ApplyToSave = source.ApplyToSave,
+        };
+    }
 }

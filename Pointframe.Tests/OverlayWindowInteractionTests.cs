@@ -239,6 +239,7 @@ public sealed class OverlayWindowInteractionTests
                 DefaultAnnotationColor = "#FFFF0000",
                 RecordingOutputPath = @"C:\\recordings",
                 ScreenshotSavePath = @"C:\\shots",
+                AutoSaveScreenshots = false,
                 OverlayCopyHotkey = 0x58, // X
                 OverlayCopyHotkeyModifiers = HotkeyModifiers.Alt,
             };
@@ -374,7 +375,8 @@ public sealed class OverlayWindowInteractionTests
             clipboardMock.Object,
             fileSystemMock.Object,
             eventAggregator,
-            Mock.Of<ITelemetryService>());
+            Mock.Of<ITelemetryService>(),
+            Mock.Of<IScreenshotWatermarkService>());
 
         var recorderMock = new Mock<IScreenRecordingService>();
         recorderMock.SetupGet(service => service.IsRecording).Returns(isRecorderRecording);

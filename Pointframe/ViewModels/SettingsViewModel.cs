@@ -1,8 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Windows.Media;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Pointframe.Services;
 
 namespace Pointframe.ViewModels;
@@ -29,6 +27,7 @@ public partial class SettingsViewModel : ObservableObject
     private int _recordingFps;
     private int _hudGapPixels;
     private DateTime? _lastAutoUpdateCheckUtc;
+    private readonly ScreenshotWatermarkSettings _watermarkOther;
 
     public SettingsViewModel(IUserSettingsService settingsService, IThemeService themeService, IDialogService dialogService, IMicrophoneDeviceService microphoneDeviceService)
     {
@@ -73,6 +72,15 @@ public partial class SettingsViewModel : ObservableObject
         _hudGapPixels = s.HudGapPixels;
         _lastAutoUpdateCheckUtc = s.LastAutoUpdateCheckUtc;
 
+        var watermark = s.ScreenshotWatermark ?? new ScreenshotWatermarkSettings();
+        _watermarkOther = watermark;
+        _watermarkEnabled = watermark.Enabled;
+        _watermarkTextTemplate = watermark.TextTemplate;
+        _watermarkPosition = watermark.Position;
+        _watermarkFontSize = watermark.FontSize;
+        _watermarkApplyToCopy = watermark.ApplyToCopy;
+        _watermarkApplyToSave = watermark.ApplyToSave;
+
         _defaultAnnotationColor = ParseAnnotationColorOrFallback(s.DefaultAnnotationColor);
         _stylePresets = new ObservableCollection<AnnotationStylePresetViewModel>(
             s.StylePresets.Select(p => new AnnotationStylePresetViewModel(p)));
@@ -114,6 +122,28 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private int _captureDelaySeconds;
+
+    [ObservableProperty]
+    private bool _watermarkEnabled;
+
+    [ObservableProperty]
+    private WatermarkTextTemplate _watermarkTextTemplate;
+
+    public IReadOnlyList<WatermarkTextTemplate> WatermarkTextTemplates { get; } = Enum.GetValues<WatermarkTextTemplate>();
+
+    [ObservableProperty]
+    private WatermarkPosition _watermarkPosition;
+
+    [ObservableProperty]
+    private double _watermarkFontSize;
+
+    [ObservableProperty]
+    private bool _watermarkApplyToCopy;
+
+    [ObservableProperty]
+    private bool _watermarkApplyToSave;
+
+    public IReadOnlyList<WatermarkPosition> WatermarkPositions { get; } = Enum.GetValues<WatermarkPosition>();
 
     [ObservableProperty]
     private Color _defaultAnnotationColor;
@@ -337,6 +367,19 @@ public partial class SettingsViewModel : ObservableObject
             RecordingCursorHighlightSize = clampedRecordingCursorHighlightSize,
             CaptureDelaySeconds = CaptureDelaySeconds,
             HudGapPixels = _hudGapPixels,
+            ScreenshotWatermark = new ScreenshotWatermarkSettings
+            {
+                Enabled = WatermarkEnabled,
+                TextTemplate = WatermarkTextTemplate,
+                Position = WatermarkPosition,
+                FontSize = WatermarkFontSize,
+                ApplyToCopy = WatermarkApplyToCopy,
+                ApplyToSave = WatermarkApplyToSave,
+                ColorHex = _watermarkOther.ColorHex,
+                BackgroundEnabled = _watermarkOther.BackgroundEnabled,
+                Opacity = _watermarkOther.Opacity,
+                Margin = _watermarkOther.Margin,
+            },
             DefaultAnnotationColor = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}",
             DefaultStrokeThickness = DefaultStrokeThickness,
             StylePresets = [.. _stylePresets.Select(p => p.ToModel())],
@@ -558,6 +601,12 @@ public partial class SettingsViewModel : ObservableObject
                 ScreenshotSavePath = defaults.ScreenshotSavePath;
                 AutoSaveScreenshots = defaults.AutoSaveScreenshots;
                 CaptureDelaySeconds = defaults.CaptureDelaySeconds;
+                WatermarkEnabled = defaults.ScreenshotWatermark.Enabled;
+                WatermarkTextTemplate = defaults.ScreenshotWatermark.TextTemplate;
+                WatermarkPosition = defaults.ScreenshotWatermark.Position;
+                WatermarkFontSize = defaults.ScreenshotWatermark.FontSize;
+                WatermarkApplyToCopy = defaults.ScreenshotWatermark.ApplyToCopy;
+                WatermarkApplyToSave = defaults.ScreenshotWatermark.ApplyToSave;
                 RegionCaptureHotkey = defaults.RegionCaptureHotkey;
                 RegionCaptureHotkeyModifiers = defaults.RegionCaptureHotkeyModifiers;
                 IsRecordingHotkey = false;
@@ -621,6 +670,12 @@ public partial class SettingsViewModel : ObservableObject
         RecordingClickRippleEnabled = defaults.RecordingClickRippleEnabled;
         RecordingCursorHighlightSize = ClampRecordingCursorHighlightSize(defaults.RecordingCursorHighlightSize);
         CaptureDelaySeconds = defaults.CaptureDelaySeconds;
+        WatermarkEnabled = defaults.ScreenshotWatermark.Enabled;
+        WatermarkTextTemplate = defaults.ScreenshotWatermark.TextTemplate;
+        WatermarkPosition = defaults.ScreenshotWatermark.Position;
+        WatermarkFontSize = defaults.ScreenshotWatermark.FontSize;
+        WatermarkApplyToCopy = defaults.ScreenshotWatermark.ApplyToCopy;
+        WatermarkApplyToSave = defaults.ScreenshotWatermark.ApplyToSave;
         DefaultAnnotationColor = ParseAnnotationColorOrFallback(defaults.DefaultAnnotationColor);
         DefaultStrokeThickness = defaults.DefaultStrokeThickness;
         ResetStylePresets(defaults.StylePresets);
