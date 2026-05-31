@@ -10,8 +10,8 @@
 
 
 <p align="center">
-  <b>Pointframe is a screen capture and recording tool for Windows, built for bug reports, tutorials, and fast feedback.</b><br>
-  Capture, annotate, blur, record, and share what matters without breaking your flow.
+  <b>The free, open-source Windows screen tool that lets you annotate and blur your screen <i>while</i> you record — no post-editing.</b><br>
+  Capture, annotate, redact, record to MP4/GIF, and pull text off the screen with OCR — all from one lightweight tray app.
 </p>
 
 <p align="center">
