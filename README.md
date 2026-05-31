@@ -179,6 +179,12 @@ Open **Settings** from the tray icon to configure:
 
 ## Installation
 
+**Via Scoop**
+
+```powershell
+scoop install pointframe
+```
+
 **Via winget (recommended)**
 
 ```powershell
